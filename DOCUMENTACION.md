@@ -66,13 +66,11 @@ Ver `TUTORIAL.md` para el detalle paso a paso.
 
 - **Control de versiones**: el código vive en GitHub, en
   [`marialuisag/bloom-app`](https://github.com/marialuisag/bloom-app), rama `main`.
-- **⚠️ Desincronización actual**: en GitHub hoy solo están commiteados `README.md` e
-  `index.html` (commits "Initial commit" y "Página inicial de Bloom"). El backend completo
-  (`server.js`, `db.js`, `package.json`, `package-lock.json`, `.gitignore`) y toda la
-  documentación (`DOCUMENTACION.md`, `PROPUESTA_BLOOM.md`, `TUTORIAL.md`) existen solo en
-  la copia local y **no están commiteados ni pusheados todavía**. Hay que hacer
-  `git add` + `git commit` + `git push` de esos archivos para que el repositorio de GitHub
-  refleje el estado real del proyecto.
+- **Sincronizado**: el backend completo (`server.js`, `db.js`, `package.json`,
+  `package-lock.json`, `.gitignore`) y toda la documentación (`DOCUMENTACION.md`,
+  `PROPUESTA_BLOOM.md`, `TUTORIAL.md`) ya están commiteados y pusheados a `main`
+  (commit "Agregar backend Express + PostgreSQL y documentación del proyecto"). El
+  repositorio de GitHub refleja el estado real del proyecto.
 - **Hosting/despliegue**: la app corre en **Railway** (servicio "empowering-serenity"),
   que aloja el backend Express y la base de datos PostgreSQL. Railway puede estar sirviendo
   una versión del backend desplegada directamente (por ejemplo vía `railway up` desde la
