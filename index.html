@@ -232,6 +232,68 @@
             margin-top: 16px;
             font-size: 0.95em;
         }
+        #seccionDashboard {
+            padding-bottom: 70px;
+        }
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
+            padding: 10px 0;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: 1.4em;
+            color: var(--text-color);
+            opacity: 0.55;
+            cursor: pointer;
+            padding: 4px 16px;
+        }
+        .tab-btn span {
+            font-size: 0.4em;
+            font-weight: bold;
+        }
+        .tab-btn.activo {
+            opacity: 1;
+            color: var(--title-color);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .stat-card {
+            background: var(--item-bg);
+            border-radius: 16px;
+            padding: 16px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stat-card.completo {
+            grid-column: 1 / -1;
+        }
+        .stat-numero {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--title-color);
+        }
+        .stat-label {
+            font-size: 0.85em;
+            color: var(--text-color);
+            opacity: 0.85;
+        }
         [hidden] {
             display: none !important;
         }
@@ -260,27 +322,60 @@
         </section>
 
         <section id="seccionDashboard" hidden>
-            <div class="emoji">🌱</div>
-            <h2 id="saludo"></h2>
-            <p class="fecha-hoy" id="fechaHoy"></p>
 
-            <p class="celebracion" id="celebracion" hidden></p>
+            <div id="vistaHoy" class="vista">
+                <div class="emoji">🌱</div>
+                <h2 id="saludo"></h2>
+                <p class="fecha-hoy" id="fechaHoy"></p>
 
-            <div class="progreso-diario" id="progresoDiario" hidden>
-                <p id="progresoTexto"></p>
-                <div class="barra-progreso">
-                    <div class="barra-progreso-relleno" id="barraProgresoRelleno" style="width: 0%"></div>
+                <p class="celebracion" id="celebracion" hidden></p>
+
+                <div class="progreso-diario" id="progresoDiario" hidden>
+                    <p id="progresoTexto"></p>
+                    <div class="barra-progreso">
+                        <div class="barra-progreso-relleno" id="barraProgresoRelleno" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <ul class="lista-habitos" id="listaHabitos"></ul>
+
+                <form class="form-habito" id="formHabito">
+                    <input type="text" id="nombreHabito" aria-label="Nuevo hábito" placeholder="Ej: Meditar 10 minutos" required>
+                    <button type="submit" class="btn">Agregar hábito 🌱</button>
+                </form>
+            </div>
+
+            <div id="vistaEstadisticas" class="vista" hidden>
+                <div class="emoji">📊</div>
+                <h2>Tus estadísticas</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-numero" id="statHabitos">0</span>
+                        <span class="stat-label">Hábitos activos</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-numero" id="statRachaMax">0</span>
+                        <span class="stat-label">Racha más larga</span>
+                    </div>
+                    <div class="stat-card completo">
+                        <span class="stat-numero" id="statSemana">0%</span>
+                        <span class="stat-label">Cumplimiento de los últimos 7 días</span>
+                    </div>
                 </div>
             </div>
 
-            <ul class="lista-habitos" id="listaHabitos"></ul>
+            <div id="vistaAjustes" class="vista" hidden>
+                <div class="emoji">⚙️</div>
+                <h2>Ajustes</h2>
+                <button class="btn" id="btnTemaAjustes">Cambiar a modo oscuro 🌙</button>
+                <button class="cerrar-sesion" id="btnCerrarSesion">Cerrar sesión</button>
+            </div>
 
-            <form class="form-habito" id="formHabito">
-                <input type="text" id="nombreHabito" aria-label="Nuevo hábito" placeholder="Ej: Meditar 10 minutos" required>
-                <button type="submit" class="btn">Agregar hábito 🌱</button>
-            </form>
-
-            <button class="cerrar-sesion" id="btnCerrarSesion">Cerrar sesión</button>
+            <nav class="tab-bar">
+                <button class="tab-btn activo" id="tabHoy" data-vista="vistaHoy" aria-label="Hoy">🌱<span>Hoy</span></button>
+                <button class="tab-btn" id="tabEstadisticas" data-vista="vistaEstadisticas" aria-label="Estadísticas">📊<span>Stats</span></button>
+                <button class="tab-btn" id="tabAjustes" data-vista="vistaAjustes" aria-label="Ajustes">⚙️<span>Ajustes</span></button>
+            </nav>
         </section>
 
     </div>
@@ -288,23 +383,26 @@
     <script>
         // Modo claro/oscuro
         const themeToggle = document.getElementById('themeToggle');
+        const btnTemaAjustes = document.getElementById('btnTemaAjustes');
         function aplicarTema(tema) {
-            if (tema === 'dark') {
+            const esOscuro = tema === 'dark';
+            if (esOscuro) {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                themeToggle.textContent = '☀️';
-                themeToggle.setAttribute('aria-label', 'Cambiar a modo claro');
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                themeToggle.textContent = '🌙';
-                themeToggle.setAttribute('aria-label', 'Cambiar a modo oscuro');
             }
+            themeToggle.textContent = esOscuro ? '☀️' : '🌙';
+            themeToggle.setAttribute('aria-label', esOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+            btnTemaAjustes.textContent = esOscuro ? 'Cambiar a modo claro ☀️' : 'Cambiar a modo oscuro 🌙';
         }
-        aplicarTema(localStorage.getItem('bloom-theme') || 'light');
-        themeToggle.addEventListener('click', () => {
+        function alternarTema() {
             const nuevoTema = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             localStorage.setItem('bloom-theme', nuevoTema);
             aplicarTema(nuevoTema);
-        });
+        }
+        aplicarTema(localStorage.getItem('bloom-theme') || 'light');
+        themeToggle.addEventListener('click', alternarTema);
+        btnTemaAjustes.addEventListener('click', alternarTema);
 
         // Referencias a elementos
         const seccionInicio = document.getElementById('seccionInicio');
@@ -321,9 +419,21 @@
         const progresoDiario = document.getElementById('progresoDiario');
         const progresoTexto = document.getElementById('progresoTexto');
         const barraProgresoRelleno = document.getElementById('barraProgresoRelleno');
+        const statHabitos = document.getElementById('statHabitos');
+        const statRachaMax = document.getElementById('statRachaMax');
+        const statSemana = document.getElementById('statSemana');
 
         let usuarioActual = null;
         const hoy = new Date().toISOString().slice(0, 10);
+
+        // Navegación por pestañas (Hoy / Estadísticas / Ajustes)
+        const vistas = document.querySelectorAll('.vista');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        function mostrarVista(nombre) {
+            vistas.forEach((v) => { v.hidden = v.id !== nombre; });
+            tabBtns.forEach((b) => { b.classList.toggle('activo', b.dataset.vista === nombre); });
+        }
+        tabBtns.forEach((b) => b.addEventListener('click', () => mostrarVista(b.dataset.vista)));
 
         // Botón "Comenzar" -> formulario de registro
         btnComenzar.addEventListener('click', () => {
@@ -376,6 +486,8 @@
             localStorage.setItem('bloom-usuario', JSON.stringify(usuario));
             seccionInicio.hidden = true;
             seccionDashboard.hidden = false;
+            themeToggle.hidden = true;
+            mostrarVista('vistaHoy');
             saludo.textContent = `Hola, ${usuario.nombre} 🌸`;
             const fechaFormateada = new Date().toLocaleDateString('es-ES', {
                 weekday: 'long',
@@ -432,6 +544,34 @@
             return racha;
         }
 
+        function calcularCumplimientoSemana(datosHabitos) {
+            if (datosHabitos.length === 0) return 0;
+            let posibles = 0;
+            let completados = 0;
+            for (const { registros } of datosHabitos) {
+                const diasCompletados = new Set(
+                    registros.filter((r) => r.completado).map((r) => r.fecha.slice(0, 10))
+                );
+                for (let i = 0; i < 7; i++) {
+                    const cursor = new Date(`${hoy}T00:00:00Z`);
+                    cursor.setUTCDate(cursor.getUTCDate() - i);
+                    posibles++;
+                    if (diasCompletados.has(cursor.toISOString().slice(0, 10))) completados++;
+                }
+            }
+            return Math.round((completados / posibles) * 100);
+        }
+
+        function actualizarEstadisticas(datosHabitos) {
+            statHabitos.textContent = datosHabitos.length;
+            const rachaMax = datosHabitos.reduce(
+                (max, d) => Math.max(max, calcularRacha(d.registros)),
+                0
+            );
+            statRachaMax.textContent = rachaMax;
+            statSemana.textContent = `${calcularCumplimientoSemana(datosHabitos)}%`;
+        }
+
         function mostrarCelebracion() {
             const frase = FRASES_CELEBRACION[Math.floor(Math.random() * FRASES_CELEBRACION.length)];
             celebracion.textContent = frase;
@@ -453,14 +593,17 @@
                 if (habitos.length === 0) {
                     listaHabitos.innerHTML = '<li class="vacio">Todavía no agregaste ningún hábito 🌱</li>';
                     progresoDiario.hidden = true;
+                    actualizarEstadisticas([]);
                     return;
                 }
 
                 listaHabitos.innerHTML = '';
                 let hechosHoy = 0;
+                const datosHabitos = [];
                 for (const habito of habitos) {
                     const regRes = await fetch(`/api/registros?habito_id=${habito.id}`);
                     const registros = await regRes.json();
+                    datosHabitos.push({ habito, registros });
                     const registroHoy = registros.find((r) => r.fecha.slice(0, 10) === hoy);
                     const hecho = Boolean(registroHoy && registroHoy.completado);
                     if (hecho) hechosHoy++;
@@ -526,6 +669,7 @@
                     listaHabitos.appendChild(li);
                 }
                 actualizarProgreso(hechosHoy, habitos.length);
+                actualizarEstadisticas(datosHabitos);
             } catch (error) {
                 listaHabitos.innerHTML = '<li class="vacio">No se pudieron cargar tus hábitos.</li>';
             }
@@ -551,6 +695,7 @@
             usuarioActual = null;
             seccionDashboard.hidden = true;
             seccionInicio.hidden = false;
+            themeToggle.hidden = false;
             btnComenzar.hidden = false;
             formRegistro.hidden = true;
             formRegistro.reset();
