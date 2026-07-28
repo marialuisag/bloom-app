@@ -167,6 +167,55 @@
             font-size: 0.8em;
             opacity: 0.8;
         }
+        .semana {
+            font-size: 0.9em;
+            letter-spacing: 3px;
+            opacity: 0.85;
+        }
+        .habito-acciones {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-eliminar {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            opacity: 0.55;
+            padding: 4px;
+        }
+        .btn-eliminar:hover {
+            opacity: 1;
+        }
+        .fecha-hoy {
+            color: var(--text-color);
+            opacity: 0.8;
+            font-size: 0.95em;
+            margin: 0 0 16px;
+            text-transform: capitalize;
+        }
+        .progreso-diario {
+            margin-bottom: 20px;
+        }
+        .progreso-diario p {
+            margin: 0 0 8px;
+            font-size: 0.95em;
+            color: var(--text-color);
+        }
+        .barra-progreso {
+            background: var(--card-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 20px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .barra-progreso-relleno {
+            background: var(--btn-bg);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.4s ease;
+        }
         .celebracion {
             margin: 0 0 16px;
             color: var(--title-color);
@@ -213,8 +262,16 @@
         <section id="seccionDashboard" hidden>
             <div class="emoji">🌱</div>
             <h2 id="saludo"></h2>
+            <p class="fecha-hoy" id="fechaHoy"></p>
 
             <p class="celebracion" id="celebracion" hidden></p>
+
+            <div class="progreso-diario" id="progresoDiario" hidden>
+                <p id="progresoTexto"></p>
+                <div class="barra-progreso">
+                    <div class="barra-progreso-relleno" id="barraProgresoRelleno" style="width: 0%"></div>
+                </div>
+            </div>
 
             <ul class="lista-habitos" id="listaHabitos"></ul>
 
@@ -260,6 +317,10 @@
         const formHabito = document.getElementById('formHabito');
         const btnCerrarSesion = document.getElementById('btnCerrarSesion');
         const celebracion = document.getElementById('celebracion');
+        const fechaHoyEl = document.getElementById('fechaHoy');
+        const progresoDiario = document.getElementById('progresoDiario');
+        const progresoTexto = document.getElementById('progresoTexto');
+        const barraProgresoRelleno = document.getElementById('barraProgresoRelleno');
 
         let usuarioActual = null;
         const hoy = new Date().toISOString().slice(0, 10);
@@ -316,7 +377,36 @@
             seccionInicio.hidden = true;
             seccionDashboard.hidden = false;
             saludo.textContent = `Hola, ${usuario.nombre} 🌸`;
+            const fechaFormateada = new Date().toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+            });
+            fechaHoyEl.textContent = fechaFormateada;
             cargarHabitos();
+        }
+
+        function generarSemana(registros) {
+            const completados = new Set(
+                registros.filter((r) => r.completado).map((r) => r.fecha.slice(0, 10))
+            );
+            let dots = '';
+            for (let i = 6; i >= 0; i--) {
+                const cursor = new Date(`${hoy}T00:00:00Z`);
+                cursor.setUTCDate(cursor.getUTCDate() - i);
+                dots += completados.has(cursor.toISOString().slice(0, 10)) ? '●' : '○';
+            }
+            return dots;
+        }
+
+        function actualizarProgreso(hechos, total) {
+            if (total === 0) {
+                progresoDiario.hidden = true;
+                return;
+            }
+            progresoDiario.hidden = false;
+            progresoTexto.textContent = `${hechos} de ${total} hábito${total === 1 ? '' : 's'} completado${hechos === 1 ? '' : 's'} hoy`;
+            barraProgresoRelleno.style.width = `${Math.round((hechos / total) * 100)}%`;
         }
 
         const FRASES_CELEBRACION = [
@@ -362,15 +452,18 @@
 
                 if (habitos.length === 0) {
                     listaHabitos.innerHTML = '<li class="vacio">Todavía no agregaste ningún hábito 🌱</li>';
+                    progresoDiario.hidden = true;
                     return;
                 }
 
                 listaHabitos.innerHTML = '';
+                let hechosHoy = 0;
                 for (const habito of habitos) {
                     const regRes = await fetch(`/api/registros?habito_id=${habito.id}`);
                     const registros = await regRes.json();
                     const registroHoy = registros.find((r) => r.fecha.slice(0, 10) === hoy);
                     const hecho = Boolean(registroHoy && registroHoy.completado);
+                    if (hecho) hechosHoy++;
                     const racha = calcularRacha(registros);
 
                     const li = document.createElement('li');
@@ -390,6 +483,15 @@
                         info.appendChild(rachaEl);
                     }
 
+                    const semanaEl = document.createElement('span');
+                    semanaEl.className = 'semana';
+                    semanaEl.textContent = generarSemana(registros);
+                    semanaEl.title = 'Últimos 7 días';
+                    info.appendChild(semanaEl);
+
+                    const acciones = document.createElement('div');
+                    acciones.className = 'habito-acciones';
+
                     const boton = document.createElement('button');
                     boton.className = 'btn-mini';
                     boton.textContent = hecho ? 'Hecho hoy' : 'Marcar hecho';
@@ -406,10 +508,24 @@
                         cargarHabitos();
                     });
 
+                    const btnEliminar = document.createElement('button');
+                    btnEliminar.className = 'btn-eliminar';
+                    btnEliminar.textContent = '🗑️';
+                    btnEliminar.setAttribute('aria-label', `Eliminar hábito ${habito.nombre}`);
+                    btnEliminar.addEventListener('click', async () => {
+                        if (!confirm(`¿Eliminar "${habito.nombre}"? Se borrará también su historial.`)) return;
+                        await fetch(`/api/habitos/${habito.id}`, { method: 'DELETE' });
+                        cargarHabitos();
+                    });
+
+                    acciones.appendChild(boton);
+                    acciones.appendChild(btnEliminar);
+
                     li.appendChild(info);
-                    li.appendChild(boton);
+                    li.appendChild(acciones);
                     listaHabitos.appendChild(li);
                 }
+                actualizarProgreso(hechosHoy, habitos.length);
             } catch (error) {
                 listaHabitos.innerHTML = '<li class="vacio">No se pudieron cargar tus hábitos.</li>';
             }

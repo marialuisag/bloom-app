@@ -76,6 +76,15 @@ app.post('/api/habitos', async (req, res) => {
   }
 });
 
+app.delete('/api/habitos/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM habitos WHERE id = $1', [req.params.id]);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
 app.get('/api/registros', async (req, res) => {
   const { habito_id } = req.query;
   try {
