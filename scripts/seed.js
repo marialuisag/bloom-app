@@ -12,7 +12,7 @@ const usuariosFake = [
 
 const habitosPorEmail = {
   'demo1@bloom.test': [
-    { nombre: 'Meditar 10 minutos', descripcion: 'Sesión breve de mindfulness al despertar' },
+    { nombre: 'Orar 10 minutos', descripcion: 'Momento breve de oración al despertar' },
     { nombre: 'Sin pantallas antes de dormir', descripcion: 'Dejar el celular 30 minutos antes de dormir' },
   ],
   'demo2@bloom.test': [
