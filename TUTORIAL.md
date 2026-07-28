@@ -22,43 +22,102 @@ Navegador (index.html)  --HTTP-->  Servidor Express (server.js)  --SQL-->  Postg
   crean las tablas y cargan datos de prueba.
 - **Configuración**: `package.json` (dependencias) y `.env` (credenciales).
 
-Ya existe un primer nivel de funcionalidad de negocio: se pueden crear usuarios, hábitos
-y registros vía API (ver sección 3.1), aunque todavía sin autenticación real ni frontend
-conectado a esos datos — el botón "Comenzar" de la landing sigue sin acción. Ese es el
-siguiente paso según `PROPUESTA_BLOOM.md`.
+Ya hay una app funcional de punta a punta: se puede crear una cuenta desde la landing,
+entrar a un panel con pestañas (**Hoy**, **Estadísticas**, **Ajustes**), agregar hábitos,
+marcarlos como hechos y ver racha/progreso — todo respaldado por la API y la base de
+datos reales (sección 2 y 3). Sigue sin haber autenticación con contraseña (la "sesión"
+es solo el email como identificador).
 
 ---
 
 ## 1. Frontend — `index.html`
 
-Es una única página HTML con CSS embebido en el `<style>` del `<head>`. No usa ningún
-framework ni JavaScript.
+Es una única página HTML (sin framework, JavaScript "vanilla" en un `<script>` al final)
+con CSS embebido en el `<style>` del `<head>`. Toda la app vive en este archivo — no hay
+build step ni bundler.
 
-Estructura:
-```html
-<div class="container">
-    <div class="emoji">🌸</div>
-    <h1>Bloom</h1>
-    <p>Tu compañera de bienestar digital...</p>
-    <button class="btn">Comenzar</button>
-</div>
-```
+### 1.1 Las dos secciones principales
 
-Puntos clave:
-- El `<div class="container">` es la tarjeta blanca centrada en pantalla; el centrado se
-  logra con `display: flex; justify-content: center; align-items: center;` en el `body`.
-- La paleta rosa/coral (`#FFD1DC` de fondo, `#F5B7B1` para título y botón) es una decisión
-  de branding deliberada (ver `PROPUESTA_BLOOM.md`, sección 4): busca transmitir calma en
-  vez de "vigilancia", coherente con el enfoque no punitivo del producto.
-- El botón `.btn` es **decorativo por ahora**: no tiene `onclick` ni `href`. Al hacer clic
-  no pasa nada. Cuando se agregue lógica de registro/login, este botón es el punto de
-  entrada natural.
-- `express.static(__dirname)` (ver sección 2) es lo que hace que este archivo sea visible
-  en el navegador — no hay un router de frontend todavía.
+`index.html` tiene dos `<section>` que se muestran/ocultan con el atributo `hidden`
+(nunca las dos al mismo tiempo):
+
+- **`#seccionInicio`** — la landing: logo 🌸, texto de propuesta de valor, botón
+  "Comenzar ✨" y el formulario de registro/login.
+- **`#seccionDashboard`** — el panel, visible después de crear cuenta o volver con una
+  sesión guardada. Tiene tres "vistas" internas controladas por una barra de pestañas
+  fija abajo (`.tab-bar`):
+  - `#vistaHoy`: fecha de hoy, mensaje de celebración, barra de progreso diario, lista
+    de hábitos, formulario para agregar un hábito.
+  - `#vistaEstadisticas`: hábitos activos, racha más larga, % de cumplimiento de los
+    últimos 7 días.
+  - `#vistaAjustes`: "Cerrar sesión" (el selector de tema vive fuera del panel, ver 1.5).
+
+  La función `mostrarVista(nombre)` oculta todas las `.vista` y muestra solo la elegida,
+  además de marcar el botón de pestaña activo con la clase `.activo`.
+
+### 1.2 Registro / "login" (sin contraseña)
+
+Al tocar "Comenzar", aparece un formulario (nombre + email). Al enviarlo:
+1. Se hace `POST /api/usuarios` (sección 2.1) con esos datos.
+2. Si el usuario se crea (201), se entra directo al panel.
+3. Si el email ya existía (409), el frontend hace `GET /api/usuarios`, busca el usuario
+   con ese email y "inicia sesión" con él — no hay contraseña, el email alcanza como
+   identificador. Esto es intencionalmente simple para esta etapa del proyecto.
+
+El usuario actual se guarda en `localStorage` (clave `bloom-usuario`), así que si volvés
+a abrir la app en el mismo navegador, `mostrarDashboard()` se llama automáticamente al
+cargar la página sin pedir el formulario de nuevo (ver el final del `<script>`).
+
+### 1.3 Panel de hábitos (`#vistaHoy`)
+
+`cargarHabitos()` trae los hábitos del usuario (`GET /api/habitos?usuario_id=...`) y, para
+cada uno, sus registros (`GET /api/registros?habito_id=...`), y arma cada fila con:
+- **Estado de hoy**: ✅/⭕ según si hay un registro de hoy con `completado: true`.
+- **Racha** (`calcularRacha`): cuenta días consecutivos completados hacia atrás desde hoy
+  (o desde ayer, si todavía no marcaste hoy, para no "romper" la racha visualmente antes
+  de que termine el día).
+- **Semana** (`generarSemana`): 7 puntos (`●`/`○`) representando los últimos 7 días.
+- Botón **"Marcar hecho"** → `POST /api/registros`; si pasa de no-hecho a hecho, dispara
+  `mostrarCelebracion()` (una cita bíblica aleatoria, tomada de `FRASES_CELEBRACION`, que
+  aparece y se desvanece sola).
+- Botón **🗑️ eliminar** → `DELETE /api/habitos/:id`, con `confirm()` antes de borrar.
+
+Al final del loop, `actualizarProgreso()` calcula "X de Y hábitos completados hoy" y
+actualiza el ancho de una barra de progreso.
+
+### 1.4 Estadísticas (`#vistaEstadisticas`)
+
+No pide datos nuevos al servidor: reutiliza los mismos hábitos/registros que ya trajo
+`cargarHabitos()` (guardados en `datosHabitos`) para calcular, en el cliente:
+- Cantidad de hábitos activos.
+- La racha más alta entre todos los hábitos (`Math.max` sobre `calcularRacha`).
+- % de cumplimiento de los últimos 7 días (`calcularCumplimientoSemana`): registros
+  completados / (hábitos × 7 días).
+
+### 1.5 Modo claro/oscuro
+
+Un único botón flotante 🌙/☀️ (arriba a la derecha, `#themeToggle`), visible siempre —
+tanto en la landing como dentro del panel. El tema se maneja con variables CSS (`:root`
+para claro, `[data-theme="dark"]` para oscuro, ambas con los mismos tonos rosa/coral,
+solo más oscuros) y se recuerda en `localStorage` (clave `bloom-theme`).
+
+### 1.6 Estilo y diseño
+
+- La paleta rosa/coral (`#FFD1DC`/`#F5B7B1` en modo claro, versiones oscurecidas de los
+  mismos tonos en modo oscuro — nunca otra familia de color) es una decisión de branding
+  deliberada (ver `PROPUESTA_BLOOM.md`, sección 4): transmite calma en vez de
+  "vigilancia", coherente con el enfoque no punitivo del producto.
+- Tipografía: **Playfair Display** (serif, elegante) para el título "Bloom" y los
+  encabezados (`h1`, `h2`); **Quicksand** (redondeada, suave) para el resto del texto.
+  Ambas se cargan gratis desde Google Fonts (`<link>` en el `<head>`), sin instalar nada.
+- El botón `.btn` tiene una animación de pulso continua (`@keyframes pulse`) que se pausa
+  al pasar el mouse.
+- El favicon es un emoji 🌸 embebido como SVG en un `data:` URI (sin archivos externos).
+- `express.static(__dirname)` (sección 2) es lo que hace que este archivo sea visible en
+  el navegador — no hay un router de frontend, es un único HTML servido tal cual.
 
 Cómo verlo: abrí el navegador en `http://localhost:3000` una vez que el servidor esté
-corriendo (sección 5), o simplemente abrí el archivo `index.html` directamente con doble
-clic (sin servidor) si solo querés ver el diseño.
+corriendo (sección 5).
 
 ---
 
@@ -127,6 +186,7 @@ Además de `/api/health`, `server.js` expone rutas CRUD básicas sobre las tres 
 | `/api/usuarios` | POST | Crea un usuario. Body: `{ "nombre": "...", "email": "..." }`. |
 | `/api/habitos` | GET | Lista hábitos. Acepta `?usuario_id=` para filtrar por usuario. |
 | `/api/habitos` | POST | Crea un hábito. Body: `{ "usuario_id": 1, "nombre": "...", "descripcion": "..." }`. |
+| `/api/habitos/:id` | DELETE | Elimina un hábito (y, por `ON DELETE CASCADE`, sus registros). |
 | `/api/registros` | GET | Lista registros. Acepta `?habito_id=` para filtrar por hábito. |
 | `/api/registros` | POST | Crea/actualiza el registro de un día. Body: `{ "habito_id": 1, "fecha": "2026-07-28", "completado": true }`. |
 
@@ -140,9 +200,14 @@ curl -X POST http://localhost:3000/api/usuarios \
 
 Todas las rutas siguen el mismo patrón: una consulta con `pool.query(...)` dentro de un
 `try/catch`, devolviendo `500` con el mensaje de error si algo falla en la base de datos.
-No hay todavía validación avanzada (tipos, formato de email, etc.) ni autenticación — cualquiera
-que conozca la URL puede leer o crear datos. Eso está bien para esta etapa de prototipo,
-pero es algo a resolver antes de tener usuarios reales.
+La excepción es `POST /api/usuarios`, que detecta el código de error `23505` (violación de
+restricción `UNIQUE` de Postgres) y devuelve `409` con un mensaje claro ("Ya existe una
+cuenta con ese email") en vez del error genérico — es lo que usa el frontend para decidir
+si debe crear un usuario nuevo o "iniciar sesión" con el existente (sección 1.2).
+
+No hay todavía validación avanzada (tipos, formato de email, etc.) ni autenticación —
+cualquiera que conozca la URL puede leer o crear datos. Eso está bien para esta etapa de
+prototipo, pero es algo a resolver antes de tener usuarios reales.
 
 ---
 
@@ -287,13 +352,16 @@ permite referenciar la URL de la base de datos entre servicios
 ## 7. Qué falta (próximos pasos técnicos)
 
 Siguiendo la hoja de ruta del proyecto:
-- Autenticación real de usuarios (hoy `/api/usuarios` no tiene login ni contraseñas).
-- Conectar el botón "Comenzar" del frontend a un flujo real (registro/login) que use
-  las rutas de `/api/usuarios` y `/api/habitos` ya existentes.
+- Autenticación real de usuarios (hoy "iniciar sesión" es solo escribir el mismo email,
+  sin contraseña).
 - Validación de datos de entrada en las rutas `POST` (hoy solo valida que los campos
   obligatorios no estén vacíos).
+- Editar un hábito ya creado (hoy solo se puede crear o eliminar, no renombrar).
+- Persistir la sesión en el servidor (hoy vive solo en `localStorage` del navegador; si
+  entrás desde otro dispositivo con el mismo email, funciona porque "iniciar sesión" es
+  buscar por email, pero no hay un token de sesión real).
 - Eventualmente migrar el frontend a un framework de UI (ej. React) si la cantidad de
-  pantallas crece, manteniendo Express como backend/API.
+  vistas sigue creciendo, manteniendo Express como backend/API.
 
 Para el contexto de producto (por qué existe Bloom, público objetivo, modelo de negocio),
 ver `PROPUESTA_BLOOM.md`. Para una evaluación crítica del estado del proyecto, ver
