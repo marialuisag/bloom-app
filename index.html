@@ -42,10 +42,16 @@
             cursor: pointer;
             margin-top: 20px;
             transition: 0.3s;
+            animation: pulse 2s ease-in-out infinite;
         }
         .btn:hover {
             background: #e8a098;
-            transform: scale(1.05);
+            transform: scale(1.1);
+            animation-play-state: paused;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
         }
         .emoji {
             font-size: 4em;
@@ -57,10 +63,10 @@
     <div class="container">
         <div class="emoji">🌸</div>
         <h1>Bloom</h1>
-        <p>Tu compañera de bienestar digital.<br>
-        Descubre cómo usas tu tiempo y <br>
-        cultiva hábitos más conscientes.</p>
-        <button class="btn">Comenzar</button>
+        <p>Tu compañera de bienestar digital 💗<br>
+        Descubre cómo usas tu tiempo ⏰ y <br>
+        cultiva hábitos más conscientes 🌱.</p>
+        <button class="btn">Comenzar ✨</button>
     </div>
 </body>
 </html>
