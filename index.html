@@ -367,7 +367,7 @@
             <div id="vistaAjustes" class="vista" hidden>
                 <div class="emoji">⚙️</div>
                 <h2>Ajustes</h2>
-                <button class="btn" id="btnTemaAjustes">Cambiar a modo oscuro 🌙</button>
+                <p>Usá el botón 🌙/☀️ de la esquina para cambiar el tema.</p>
                 <button class="cerrar-sesion" id="btnCerrarSesion">Cerrar sesión</button>
             </div>
 
@@ -381,28 +381,26 @@
     </div>
 
     <script>
-        // Modo claro/oscuro
+        // Modo claro/oscuro (botón flotante, siempre visible)
         const themeToggle = document.getElementById('themeToggle');
-        const btnTemaAjustes = document.getElementById('btnTemaAjustes');
         function aplicarTema(tema) {
             const esOscuro = tema === 'dark';
             if (esOscuro) {
                 document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '☀️';
+                themeToggle.setAttribute('aria-label', 'Cambiar a modo claro');
             } else {
                 document.documentElement.removeAttribute('data-theme');
+                themeToggle.textContent = '🌙';
+                themeToggle.setAttribute('aria-label', 'Cambiar a modo oscuro');
             }
-            themeToggle.textContent = esOscuro ? '☀️' : '🌙';
-            themeToggle.setAttribute('aria-label', esOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
-            btnTemaAjustes.textContent = esOscuro ? 'Cambiar a modo claro ☀️' : 'Cambiar a modo oscuro 🌙';
         }
-        function alternarTema() {
+        aplicarTema(localStorage.getItem('bloom-theme') || 'light');
+        themeToggle.addEventListener('click', () => {
             const nuevoTema = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             localStorage.setItem('bloom-theme', nuevoTema);
             aplicarTema(nuevoTema);
-        }
-        aplicarTema(localStorage.getItem('bloom-theme') || 'light');
-        themeToggle.addEventListener('click', alternarTema);
-        btnTemaAjustes.addEventListener('click', alternarTema);
+        });
 
         // Referencias a elementos
         const seccionInicio = document.getElementById('seccionInicio');
@@ -486,7 +484,6 @@
             localStorage.setItem('bloom-usuario', JSON.stringify(usuario));
             seccionInicio.hidden = true;
             seccionDashboard.hidden = false;
-            themeToggle.hidden = true;
             mostrarVista('vistaHoy');
             saludo.textContent = `Hola, ${usuario.nombre} 🌸`;
             const fechaFormateada = new Date().toLocaleDateString('es-ES', {
@@ -522,10 +519,12 @@
         }
 
         const FRASES_CELEBRACION = [
-            '✨ ¡Un paso más para tu jardín! ✨',
-            '🌸 ¡Muy bien! Bloom está orgullosa de vos.',
-            '🎉 ¡Lo lograste! Seguí así.',
-            '💗 Pequeños pasos, grandes cambios.',
+            '🙏 «Todo lo puedo en Cristo que me fortalece» — Filipenses 4:13',
+            '🕊️ «Encomienda a Jehová tu camino, y confía en él; y él hará» — Salmos 37:5',
+            '✨ «No temas, porque yo estoy contigo» — Isaías 41:10',
+            '🌱 «Todo tiene su tiempo, y todo lo que se quiere debajo del cielo tiene su hora» — Eclesiastés 3:1',
+            '💗 «El gozo de Jehová es vuestra fuerza» — Nehemías 8:10',
+            '🙌 «Dad gracias en todo, porque esta es la voluntad de Dios» — 1 Tesalonicenses 5:18',
         ];
 
         function calcularRacha(registros) {
@@ -695,7 +694,6 @@
             usuarioActual = null;
             seccionDashboard.hidden = true;
             seccionInicio.hidden = false;
-            themeToggle.hidden = false;
             btnComenzar.hidden = false;
             formRegistro.hidden = true;
             formRegistro.reset();
