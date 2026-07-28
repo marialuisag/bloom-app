@@ -158,6 +158,22 @@
             opacity: 0.7;
             font-style: italic;
         }
+        .habito-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .racha {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        .celebracion {
+            margin: 0 0 16px;
+            color: var(--title-color);
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: opacity 0.4s ease;
+        }
         .cerrar-sesion {
             background: none;
             border: none;
@@ -197,6 +213,8 @@
         <section id="seccionDashboard" hidden>
             <div class="emoji">🌱</div>
             <h2 id="saludo"></h2>
+
+            <p class="celebracion" id="celebracion" hidden></p>
 
             <ul class="lista-habitos" id="listaHabitos"></ul>
 
@@ -241,6 +259,7 @@
         const listaHabitos = document.getElementById('listaHabitos');
         const formHabito = document.getElementById('formHabito');
         const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+        const celebracion = document.getElementById('celebracion');
 
         let usuarioActual = null;
         const hoy = new Date().toISOString().slice(0, 10);
@@ -300,6 +319,41 @@
             cargarHabitos();
         }
 
+        const FRASES_CELEBRACION = [
+            '✨ ¡Un paso más para tu jardín! ✨',
+            '🌸 ¡Muy bien! Bloom está orgullosa de vos.',
+            '🎉 ¡Lo lograste! Seguí así.',
+            '💗 Pequeños pasos, grandes cambios.',
+        ];
+
+        function calcularRacha(registros) {
+            const completados = new Set(
+                registros.filter((r) => r.completado).map((r) => r.fecha.slice(0, 10))
+            );
+            let racha = 0;
+            const cursor = new Date(`${hoy}T00:00:00Z`);
+            if (!completados.has(hoy)) {
+                cursor.setUTCDate(cursor.getUTCDate() - 1);
+            }
+            while (completados.has(cursor.toISOString().slice(0, 10))) {
+                racha++;
+                cursor.setUTCDate(cursor.getUTCDate() - 1);
+            }
+            return racha;
+        }
+
+        function mostrarCelebracion() {
+            const frase = FRASES_CELEBRACION[Math.floor(Math.random() * FRASES_CELEBRACION.length)];
+            celebracion.textContent = frase;
+            celebracion.hidden = false;
+            celebracion.style.opacity = '1';
+            clearTimeout(mostrarCelebracion.temporizador);
+            mostrarCelebracion.temporizador = setTimeout(() => {
+                celebracion.style.opacity = '0';
+                setTimeout(() => { celebracion.hidden = true; }, 400);
+            }, 2500);
+        }
+
         async function cargarHabitos() {
             listaHabitos.innerHTML = '<li class="vacio">Cargando...</li>';
             try {
@@ -317,12 +371,24 @@
                     const registros = await regRes.json();
                     const registroHoy = registros.find((r) => r.fecha.slice(0, 10) === hoy);
                     const hecho = Boolean(registroHoy && registroHoy.completado);
+                    const racha = calcularRacha(registros);
 
                     const li = document.createElement('li');
                     li.className = 'habito-item';
 
-                    const span = document.createElement('span');
-                    span.textContent = `${hecho ? '✅' : '⭕'} ${habito.nombre}`;
+                    const info = document.createElement('div');
+                    info.className = 'habito-info';
+
+                    const nombreEl = document.createElement('span');
+                    nombreEl.textContent = `${hecho ? '✅' : '⭕'} ${habito.nombre}`;
+                    info.appendChild(nombreEl);
+
+                    if (racha > 0) {
+                        const rachaEl = document.createElement('span');
+                        rachaEl.className = 'racha';
+                        rachaEl.textContent = `🔥 ${racha} ${racha === 1 ? 'día seguido' : 'días seguidos'}`;
+                        info.appendChild(rachaEl);
+                    }
 
                     const boton = document.createElement('button');
                     boton.className = 'btn-mini';
@@ -334,10 +400,13 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ habito_id: habito.id, fecha: hoy, completado: !hecho }),
                         });
+                        if (!hecho) {
+                            mostrarCelebracion();
+                        }
                         cargarHabitos();
                     });
 
-                    li.appendChild(span);
+                    li.appendChild(info);
                     li.appendChild(boton);
                     listaHabitos.appendChild(li);
                 }
