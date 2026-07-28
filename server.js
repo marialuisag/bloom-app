@@ -41,6 +41,9 @@ app.post('/api/usuarios', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ status: 'error', message: 'Ya existe una cuenta con ese email' });
+    }
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
