@@ -16,6 +16,7 @@
             --btn-text: #ffffff;
             --input-border: #F5B7B1;
             --mensaje-color: #4A4A4A;
+            --item-bg: #FFF6F7;
         }
         [data-theme="dark"] {
             --bg: #3a1f26;
@@ -27,6 +28,7 @@
             --btn-text: #ffffff;
             --input-border: #e8a098;
             --mensaje-color: #f0d9dc;
+            --item-bg: #5c3540;
         }
         body {
             margin: 0;
@@ -45,12 +47,19 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
             max-width: 500px;
+            width: 100%;
+            box-sizing: border-box;
             transition: background 0.3s;
         }
         h1 {
             color: var(--title-color);
             font-size: 2.5em;
             margin-bottom: 10px;
+        }
+        h2 {
+            color: var(--title-color);
+            font-size: 1.6em;
+            margin: 0 0 20px;
         }
         p {
             color: var(--text-color);
@@ -95,24 +104,68 @@
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        .form-registro {
+        .form-registro, .form-habito {
             margin-top: 20px;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
-        .form-registro input {
+        .form-registro input, .form-habito input {
             padding: 12px 16px;
             border-radius: 20px;
             border: 2px solid var(--input-border);
             font-size: 1em;
             font-family: inherit;
             outline: none;
+            background: transparent;
+            color: var(--text-color);
         }
         .mensaje {
             margin-top: 20px;
             color: var(--mensaje-color);
             font-weight: bold;
+        }
+        .lista-habitos {
+            list-style: none;
+            margin: 0 0 10px;
+            padding: 0;
+            text-align: left;
+        }
+        .habito-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--item-bg);
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+        .btn-mini {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        .btn-mini:hover {
+            background: var(--btn-hover);
+        }
+        .vacio {
+            color: var(--text-color);
+            opacity: 0.7;
+            font-style: italic;
+        }
+        .cerrar-sesion {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 16px;
+            font-size: 0.95em;
         }
         [hidden] {
             display: none !important;
@@ -122,21 +175,39 @@
 <body>
     <button id="themeToggle" class="theme-toggle" aria-label="Cambiar a modo oscuro">🌙</button>
     <div class="container">
-        <div class="emoji">🌸</div>
-        <h1>Bloom</h1>
-        <p>Tu compañera de bienestar digital 💗<br>
-        Descubre cómo usas tu tiempo ⏰ y <br>
-        cultiva hábitos más conscientes 🌱.</p>
 
-        <button class="btn" id="btnComenzar">Comenzar ✨</button>
+        <section id="seccionInicio">
+            <div class="emoji">🌸</div>
+            <h1>Bloom</h1>
+            <p>Tu compañera de bienestar digital 💗<br>
+            Descubre cómo usas tu tiempo ⏰ y <br>
+            cultiva hábitos más conscientes 🌱.</p>
 
-        <form class="form-registro" id="formRegistro" hidden>
-            <input type="text" id="nombre" aria-label="Tu nombre" placeholder="Tu nombre" required>
-            <input type="email" id="email" aria-label="Tu email" placeholder="Tu email" required>
-            <button type="submit" class="btn">Crear mi cuenta 🌸</button>
-        </form>
+            <button class="btn" id="btnComenzar">Comenzar ✨</button>
 
-        <p class="mensaje" id="mensaje" hidden></p>
+            <form class="form-registro" id="formRegistro" hidden>
+                <input type="text" id="nombre" aria-label="Tu nombre" placeholder="Tu nombre" required>
+                <input type="email" id="email" aria-label="Tu email" placeholder="Tu email" required>
+                <button type="submit" class="btn">Crear mi cuenta 🌸</button>
+            </form>
+
+            <p class="mensaje" id="mensaje" hidden></p>
+        </section>
+
+        <section id="seccionDashboard" hidden>
+            <div class="emoji">🌱</div>
+            <h2 id="saludo"></h2>
+
+            <ul class="lista-habitos" id="listaHabitos"></ul>
+
+            <form class="form-habito" id="formHabito">
+                <input type="text" id="nombreHabito" aria-label="Nuevo hábito" placeholder="Ej: Meditar 10 minutos" required>
+                <button type="submit" class="btn">Agregar hábito 🌱</button>
+            </form>
+
+            <button class="cerrar-sesion" id="btnCerrarSesion">Cerrar sesión</button>
+        </section>
+
     </div>
 
     <script>
@@ -160,11 +231,21 @@
             aplicarTema(nuevoTema);
         });
 
-        // Botón "Comenzar" -> formulario de registro
+        // Referencias a elementos
+        const seccionInicio = document.getElementById('seccionInicio');
+        const seccionDashboard = document.getElementById('seccionDashboard');
         const btnComenzar = document.getElementById('btnComenzar');
         const formRegistro = document.getElementById('formRegistro');
         const mensaje = document.getElementById('mensaje');
+        const saludo = document.getElementById('saludo');
+        const listaHabitos = document.getElementById('listaHabitos');
+        const formHabito = document.getElementById('formHabito');
+        const btnCerrarSesion = document.getElementById('btnCerrarSesion');
 
+        let usuarioActual = null;
+        const hoy = new Date().toISOString().slice(0, 10);
+
+        // Botón "Comenzar" -> formulario de registro
         btnComenzar.addEventListener('click', () => {
             btnComenzar.hidden = true;
             formRegistro.hidden = false;
@@ -186,16 +267,116 @@
                 const datos = await respuesta.json();
 
                 if (respuesta.ok) {
-                    formRegistro.hidden = true;
-                    mensaje.textContent = `¡Bienvenida, ${nombre}! 🌸 Tu cuenta se creó correctamente.`;
-                } else {
-                    mensaje.textContent = datos.message || 'Algo salió mal, probá de nuevo.';
+                    mostrarDashboard(datos);
+                    return;
                 }
+
+                if (respuesta.status === 409) {
+                    // Ya existe una cuenta con ese email: la usamos para "iniciar sesión"
+                    const listaRes = await fetch('/api/usuarios');
+                    const lista = await listaRes.json();
+                    const existente = lista.find((u) => u.email === email);
+                    if (existente) {
+                        mostrarDashboard(existente);
+                        return;
+                    }
+                }
+
+                mensaje.textContent = datos.message || 'Algo salió mal, probá de nuevo.';
+                mensaje.hidden = false;
             } catch (error) {
                 mensaje.textContent = 'No se pudo conectar con el servidor. Probá de nuevo en un momento.';
+                mensaje.hidden = false;
             }
-            mensaje.hidden = false;
         });
+
+        // Dashboard
+        function mostrarDashboard(usuario) {
+            usuarioActual = usuario;
+            localStorage.setItem('bloom-usuario', JSON.stringify(usuario));
+            seccionInicio.hidden = true;
+            seccionDashboard.hidden = false;
+            saludo.textContent = `Hola, ${usuario.nombre} 🌸`;
+            cargarHabitos();
+        }
+
+        async function cargarHabitos() {
+            listaHabitos.innerHTML = '<li class="vacio">Cargando...</li>';
+            try {
+                const res = await fetch(`/api/habitos?usuario_id=${usuarioActual.id}`);
+                const habitos = await res.json();
+
+                if (habitos.length === 0) {
+                    listaHabitos.innerHTML = '<li class="vacio">Todavía no agregaste ningún hábito 🌱</li>';
+                    return;
+                }
+
+                listaHabitos.innerHTML = '';
+                for (const habito of habitos) {
+                    const regRes = await fetch(`/api/registros?habito_id=${habito.id}`);
+                    const registros = await regRes.json();
+                    const registroHoy = registros.find((r) => r.fecha.slice(0, 10) === hoy);
+                    const hecho = Boolean(registroHoy && registroHoy.completado);
+
+                    const li = document.createElement('li');
+                    li.className = 'habito-item';
+
+                    const span = document.createElement('span');
+                    span.textContent = `${hecho ? '✅' : '⭕'} ${habito.nombre}`;
+
+                    const boton = document.createElement('button');
+                    boton.className = 'btn-mini';
+                    boton.textContent = hecho ? 'Hecho hoy' : 'Marcar hecho';
+                    boton.addEventListener('click', async () => {
+                        boton.disabled = true;
+                        await fetch('/api/registros', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ habito_id: habito.id, fecha: hoy, completado: !hecho }),
+                        });
+                        cargarHabitos();
+                    });
+
+                    li.appendChild(span);
+                    li.appendChild(boton);
+                    listaHabitos.appendChild(li);
+                }
+            } catch (error) {
+                listaHabitos.innerHTML = '<li class="vacio">No se pudieron cargar tus hábitos.</li>';
+            }
+        }
+
+        formHabito.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const input = document.getElementById('nombreHabito');
+            const nombre = input.value.trim();
+            if (!nombre) return;
+
+            await fetch('/api/habitos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario_id: usuarioActual.id, nombre }),
+            });
+            input.value = '';
+            cargarHabitos();
+        });
+
+        btnCerrarSesion.addEventListener('click', () => {
+            localStorage.removeItem('bloom-usuario');
+            usuarioActual = null;
+            seccionDashboard.hidden = true;
+            seccionInicio.hidden = false;
+            btnComenzar.hidden = false;
+            formRegistro.hidden = true;
+            formRegistro.reset();
+            mensaje.hidden = true;
+        });
+
+        // Restaurar sesión si ya había una cuenta creada en este navegador
+        const usuarioGuardado = localStorage.getItem('bloom-usuario');
+        if (usuarioGuardado) {
+            mostrarDashboard(JSON.parse(usuarioGuardado));
+        }
     </script>
 </body>
 </html>
