@@ -347,6 +347,11 @@ PostgreSQL en la misma plataforma. Railway define automáticamente la variable `
 permite referenciar la URL de la base de datos entre servicios
 (`${{Postgres.DATABASE_URL}}`), evitando configurar infraestructura desde cero.
 
+**URL pública: https://bloom-wellness.up.railway.app/** — el dominio se renombró (gratis,
+con `railway domain update`) desde el generado automáticamente por Railway
+(`empowering-serenity-production.up.railway.app`) a uno más prolijo y sin datos
+personales.
+
 ---
 
 ## 7. Qué falta (próximos pasos técnicos)

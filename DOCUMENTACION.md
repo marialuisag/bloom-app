@@ -77,6 +77,10 @@ Ver `TUTORIAL.md` para el detalle paso a paso.
   máquina local) en vez de estar conectado al repo de GitHub — vale la pena confirmar en el
   panel de Railway si el deploy está enlazado a este repositorio o si se hizo por CLI,
   para saber qué disparará el próximo deploy automático.
+- **URL pública**: **https://bloom-wellness.up.railway.app/** — el dominio de Railway se
+  renombró desde el generado automáticamente (`empowering-serenity-production.up.railway.app`)
+  a uno sin nombres personales ni el nombre interno del servicio, gratis (`railway domain
+  update`, sin comprar un dominio propio).
 
 ## 3. Evaluación honesta de la idea
 
